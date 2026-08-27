@@ -1,7 +1,7 @@
 """
 rag_agent.py
-TEKNOFEST Türkçe Yapay Zeka Dil Ajanları Yarışması
-Uçtan Uça RAG Pipeline: Evrak Sınıflandırma + Eksik Bilgi Tespiti + Resmî Yazı Taslaklama
+Kamu Evrak ve Yazışma Süreçleri İçin Akıllı Agent Destek Sistemi
+Uçtan Uca RAG Pipeline: Evrak Sınıflandırma + Eksik Bilgi Tespiti + Resmî Yazı Taslaklama
 
 Donanım: RTX 4070 (8GB VRAM) + 32GB RAM
 LLM: Qwen 2.5 (Ollama üzerinden)
@@ -23,9 +23,7 @@ from langchain_ollama import ChatOllama
 from langchain_core.messages import SystemMessage, HumanMessage
 
 
-# ═══════════════════════════════════════════════════════════════
 # KONFİGÜRASYON
-# ═══════════════════════════════════════════════════════════════
 QDRANT_PATH = "./qdrant_db"
 COLLECTION_NAME = "mevzuat_kanunlar"
 EMBED_MODEL = "sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2"
@@ -37,9 +35,7 @@ LLM_MAX_TOKENS = 2048
 device = "cuda" if torch.cuda.is_available() else "cpu"
 
 
-# ═══════════════════════════════════════════════════════════════
 # 1. MODÜLER LLM BAĞLANTISI
-# ═══════════════════════════════════════════════════════════════
 class LLMProvider:
     """
     Modüler LLM arayüzü. İleride OpenAI, Gemini, vs. geçişi kolaylaştırır.
@@ -83,9 +79,7 @@ class LLMProvider:
             return {"raw_output": raw, "parse_error": True}
 
 
-# ═══════════════════════════════════════════════════════════════
 # 2. EMBEDDING & RETRIEVAL (Qdrant)
-# ═══════════════════════════════════════════════════════════════
 class MevzuatRetriever:
     """Qdrant üzerinden mevzuat araması yapar."""
     def __init__(self, qdrant_path: str = QDRANT_PATH, model_name: str = EMBED_MODEL):
@@ -123,9 +117,7 @@ class MevzuatRetriever:
         return docs
 
 
-# ═══════════════════════════════════════════════════════════════
 # 3. GELİŞMİŞ PROMPT MÜHENDİSLİĞİ
-# ═══════════════════════════════════════════════════════════════
 SYSTEM_PROMPT = """Sen, Türkiye Cumhuriyeti kamu kurumlarında (özellikle üniversitelerde) çalışan son derece dikkatli, analitik ve deneyimli bir idari uzman ve hukuk danışmanısın.
 Görevin, kuruma gelen evrakları (dilekçe, başvuru vb.) analiz etmek ve SIFIR mantık hatasıyla aşağıdaki 3 adımı uygulamaktır.
 
@@ -195,9 +187,7 @@ Lütfen yukarıdaki sistem talimatlarına göre analiz yap ve üç görevi tek y
     return prompt
 
 
-# ═══════════════════════════════════════════════════════════════
 # 4. RAG AGENT (ANA MOTOR)
-# ═══════════════════════════════════════════════════════════════
 class RAGAgent:
     """Uçtan uca RAG pipeline: Retrieve -> Augment -> Generate"""
     def __init__(self):
@@ -257,9 +247,7 @@ class RAGAgent:
         return result
 
 
-# ═══════════════════════════════════════════════════════════════
 # 5. KURGUSAL TEST EVRAKLARI
-# ═══════════════════════════════════════════════════════════════
 TEST_EVRAGI_1 = """
 T.C.
 ÖRNEK ÜNİVERSİTESİ REKTÖRLÜĞÜNE
@@ -329,9 +317,7 @@ Elif Demir
 """
 
 
-# ═══════════════════════════════════════════════════════════════
 # 6. ANA ÇALIŞMA AKIŞI
-# ═══════════════════════════════════════════════════════════════
 def main():
     agent = RAGAgent()
 
@@ -340,7 +326,6 @@ def main():
     print("━" * 65 + "\n")
     agent.process_and_print(TEST_EVRAGI_1, top_k=5)
 
-    # İstersen diğer test evraklarını da çalıştırabilirsin:
     # print("\n" + "━" * 65)
     # print("  TEST SENARYOSU 2: İmar Barışı Başvurusu")
     # print("━" * 65 + "\n")
