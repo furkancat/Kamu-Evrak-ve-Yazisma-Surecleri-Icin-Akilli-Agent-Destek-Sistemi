@@ -433,7 +433,7 @@ def ornek_secim(secim: str):
 
 # GRADIO ARAYÜZÜ
 with gr.Blocks(
-    title="TEKNOFEST RAG Agent - Kamu Evrak Analiz Sistemi",
+    title="Kamu Evrak Analiz Sistemi",
     theme=gr.themes.Soft(
         primary_hue="indigo",
         secondary_hue="slate",
@@ -457,7 +457,6 @@ with gr.Blocks(
     gr.HTML("""
         <div class="title">📋 Kamu Evrak Akıllı Analiz Sistemi</div>
         <div class="subtitle">
-            TEKNOFEST Türkçe Yapay Zeka Dil Ajanları Yarışması | 
             LangGraph Çok Ajanlı RAG Pipeline | OCR + Vektör Arama + LLM
         </div>
     """)
@@ -599,7 +598,6 @@ with gr.Blocks(
     # Footer
     gr.HTML("""
         <div style="text-align:center; margin-top:1.5rem; padding-top:1rem; border-top:1px solid #e2e8f0; font-size:0.8rem; color:#94a3b8;">
-            TEKNOFEST 2026 | Türkçe Yapay Zeka Dil Ajanları Yarışması | 
             Teknoloji: LangGraph + Qdrant + Ollama (Qwen 2.5) + SentenceTransformers + Tesseract OCR + PyMuPDF
         </div>
     """)
