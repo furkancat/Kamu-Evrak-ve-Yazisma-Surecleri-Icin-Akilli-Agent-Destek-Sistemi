@@ -215,6 +215,10 @@ python langgraph_multi_agent.py
 
 ## 🖥️ Ekran Görüntüleri / Demo Akışı
 
+<img width="1280" height="615" alt="Ekran görüntüsü 2026-08-27 141405" src="https://github.com/user-attachments/assets/720c1da0-ec7f-44f7-b28e-d3962cb4b92b" />
+<img width="1221" height="617" alt="Ekran görüntüsü 2026-08-27 141422" src="https://github.com/user-attachments/assets/9e1cffaf-cb83-4860-8098-f1bd958cfff7" />
+<img width="1221" height="614" alt="Ekran görüntüsü 2026-08-27 141440" src="https://github.com/user-attachments/assets/bcf172c3-275e-4761-bbb9-1476d0163737" />
+
 ### 1. Evrak Yükleme ve OCR
 Kullanıcı PDF veya resim dosyası yükler. Sistem:
 - PyMuPDF ile PDF'ten metin çıkarır.
