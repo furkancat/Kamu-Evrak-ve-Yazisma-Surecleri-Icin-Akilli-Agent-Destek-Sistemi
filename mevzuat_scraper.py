@@ -1,3 +1,13 @@
+"""
+Kamu Evrak ve Yazışma Süreçleri İçin Akıllı Agent Destek Sistemi
+Web Kazıma (Scraping) ve Veri Hazırlama Modülü
+
+Açıklama: 
+Kamu mevzuat (kanun, yönetmelik, genelge vb.) verilerini resmi kaynaklardan 
+otomatik olarak çeken, madde bazında yapılandıran (chunking) ve RAG 
+(Retrieval-Augmented Generation) mimarisi için JSON formatında dışa aktaran otomasyon betiğidir.
+"""
+
 import json
 import time
 from bs4 import BeautifulSoup
@@ -40,8 +50,7 @@ def run_scraper():
     tum_mevzuat_verisi = []
     linkler_ve_nolar = []
     
-    # Doğru hash'leri sitenin HTML'inden veya adres çubuğundan almalısın.
-    # Önceki loglarında Yönetmelikler için "cumhurbaskanligiBakanlarKuruluYonetmelikleri" kullandığını görmüştüm.
+    # Sisteme entegre edilecek hedef mevzuat kategorilerinin DOM/URL tanımlayıcıları
     hedef_kategoriler = [
         "#kanunlar", 
         "#cumhurbaskanligiBakanlarKuruluYonetmelikleri", 
@@ -60,13 +69,13 @@ def run_scraper():
                 page.goto(f"https://mevzuat.gov.tr/{kategori}", timeout=60000)
                 page.wait_for_timeout(2000) 
                 
-                # 14 buton arasından sadece 'görünür' olana tıkla
+                # İlgili kategorinin arama işlemini başlatmak için DOM üzerindeki aktif butonu tetikle
                 page.locator("button#btnSearch:visible").click()
                 
-                # Tablo id'si ne olursa olsun, DataTables sınıfına sahip görünür tabloyu bekle
+                # Asenkron veri yüklemesini yönetmek için DataTables yapısının DOM'a işlenmesini bekle
                 page.wait_for_selector("table.dataTable:visible tbody tr", timeout=15000)
                 
-                # İsmi "_length" ile biten görünür menüden 100 satırı seç
+                # Scraping hızını artırmak ve sayfalama maliyetini düşürmek için görünür satır sayısını 100'e çıkar
                 page.locator("select[name$='_length']:visible").select_option("100")
                 page.wait_for_timeout(2000)
                 
@@ -74,7 +83,7 @@ def run_scraper():
                 while True:
                     print(f"{kategori_ismi} - Tablo Sayfası {sayfa_no} okunuyor...")
                     
-                    # Sadece görünür olan tablodan satırları çek
+                    # Sadece geçerli sayfadaki (görünür olan) tablo satırlarını (tr elementlerini) topla
                     satirlar = page.query_selector_all("table.dataTable:visible tbody tr")
                     
                     for satir in satirlar:
@@ -103,7 +112,7 @@ def run_scraper():
         toplam_link = len(linkler_ve_nolar)
         print(f"\nToplam {toplam_link} adet mevzuat linki bulundu. Metinler çekiliyor...\n")
 
-        # --- 2. AŞAMA: METİNLERİ KAZI ---
+        # 2. AŞAMA: DETAY METİNLERİNİN KAZINMASI (DATA EXTRACTION)
         for i, item in enumerate(linkler_ve_nolar, 1):
             iframe_url = f"https://mevzuat.gov.tr/anasayfa/MevzuatFihristDetayIframe?{item['href'].split('?')[1]}"
             print(f"[{i}/{toplam_link}] İşleniyor: {item['tur']} - No {item['no']}")
@@ -122,7 +131,7 @@ def run_scraper():
 
         browser.close()
 
-    # --- 3. AŞAMA: VERİYİ KAYDET ---
+    # 3. AŞAMA: VERİNİN YAPISAL (JSON) OLARAK KAYDEDİLMESİ
     with open('mevzuat_veriseti_tam.json', 'w', encoding='utf-8') as f:
         json.dump(tum_mevzuat_verisi, f, ensure_ascii=False, indent=4)
         
