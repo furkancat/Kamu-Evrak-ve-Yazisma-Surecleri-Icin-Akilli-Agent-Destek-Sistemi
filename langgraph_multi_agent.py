@@ -1,6 +1,5 @@
 """
 langgraph_multi_agent.py
-TEKNOFEST Türkçe Yapay Zeka Dil Ajanları Yarışması
 LangGraph Çok Ajanlı (Multi-Agent) RAG Pipeline
 
 Ajan 1: Evrak Analizcisi  -> Evrakı okur, sınıflandırır, temiz arama sorgusu üretir
@@ -22,15 +21,13 @@ import torch
 from qdrant_client import QdrantClient
 from sentence_transformers import SentenceTransformer
 
-# ── LangChain & LangGraph ──
+# LangChain & LangGraph
 from langchain_ollama import ChatOllama
 from langchain_core.messages import SystemMessage, HumanMessage
 from langgraph.graph import StateGraph, END
 
 
-# ═══════════════════════════════════════════════════════════════
 # KONFİGÜRASYON
-# ═══════════════════════════════════════════════════════════════
 QDRANT_PATH = "./qdrant_db"
 COLLECTION_NAME = "mevzuat_kanunlar"
 EMBED_MODEL = "sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2"
@@ -41,9 +38,7 @@ LLM_MAX_TOKENS = 2048
 device = "cuda" if torch.cuda.is_available() else "cpu"
 
 
-# ═══════════════════════════════════════════════════════════════
 # 0. MODÜLER LLM BAĞLANTISI
-# ═══════════════════════════════════════════════════════════════
 class LLMProvider:
     """Modüler LLM arayüzü. İleride farklı API'lere geçiş kolay."""
     def __init__(self, model_name: str = LLM_MODEL, temperature: float = LLM_TEMPERATURE):
@@ -70,9 +65,7 @@ class LLMProvider:
         return response.content
 
 
-# ═══════════════════════════════════════════════════════════════
 # 0. QDRANT RETRIEVER
-# ═══════════════════════════════════════════════════════════════
 class MevzuatRetriever:
     """Qdrant üzerinden mevzuat araması yapar."""
     def __init__(self, qdrant_path: str = QDRANT_PATH, model_name: str = EMBED_MODEL):
@@ -112,9 +105,7 @@ llm_provider = LLMProvider()
 retriever = MevzuatRetriever()
 
 
-# ═══════════════════════════════════════════════════════════════
 # STATE TANIMI (LangGraph TypedDict)
-# ═══════════════════════════════════════════════════════════════
 class AgentState(TypedDict):
     """Tüm ajanlar arasında paylaşılan durum (state)."""
     evrak_metni: str           # Gelen evrakın tam metni
@@ -126,9 +117,7 @@ class AgentState(TypedDict):
     final_output: str          # Birleştirilmiş nihai rapor
 
 
-# ═══════════════════════════════════════════════════════════════
 # AJAN 1: EVRAK ANALİZCİSİ
-# ═══════════════════════════════════════════════════════════════
 PROMPT_AJAN1 = """Sen, Türkiye Cumhuriyeti kamu kurumlarında 20 yıllık deneyime sahip bir evrak analiz uzmanısın. 
 
 KURALLAR:
@@ -207,9 +196,7 @@ def evrak_analizcisi(state: AgentState) -> AgentState:
     }
 
 
-# ═══════════════════════════════════════════════════════════════
 # AJAN 2: MEVZUAT UZMANI & EKSİK DENETLEYİCİ
-# ═══════════════════════════════════════════════════════════════
 PROMPT_AJAN2 = """Sen kıdemli bir hukuk müşavirisin. 
 Evrak metni ile mevzuat maddelerini karşılaştırarak eksik belge denetimi yapacaksın.
 
@@ -269,9 +256,7 @@ Lütfen yukarıdaki kurallara göre eksiklik analizi yap."""
     }
 
 
-# ═══════════════════════════════════════════════════════════════
 # AJAN 3: RAPORTÖR (TASLAK ÜRETİCİ)
-# ═══════════════════════════════════════════════════════════════
 PROMPT_AJAN3 = """Sen kurumsal bir raportörsün.
 Amacın önceki raporları birleştirip resmi yazılar oluşturmaktır.
 
@@ -342,9 +327,7 @@ taslaklarını hazırla."""
     }
 
 
-# ═══════════════════════════════════════════════════════════════
 # LANGGRAPH STATEGRAPH YAPISI
-# ═══════════════════════════════════════════════════════════════
 def build_graph() -> StateGraph:
     """LangGraph StateGraph'ini oluşturur ve derler."""
     graph = StateGraph(AgentState)
@@ -365,9 +348,7 @@ def build_graph() -> StateGraph:
     return graph.compile()
 
 
-# ═══════════════════════════════════════════════════════════════
 # TEST EVRAKLARI
-# ═══════════════════════════════════════════════════════════════
 TEST_EVRAGI_1 = """T.C.
 ÖRNEK ÜNİVERSİTESİ REKTÖRLÜĞÜNE
 
@@ -411,9 +392,7 @@ Bilgilerinize arz ederim.
 Mehmet Kaya"""
 
 
-# ═══════════════════════════════════════════════════════════════
 # ANA ÇALIŞMA AKIŞI
-# ═══════════════════════════════════════════════════════════════
 def main():
     print("=" * 65)
     print("  LANGGRAPH ÇOK AJANLI RAG PIPELINE")
