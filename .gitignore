@@ -1,0 +1,15 @@
+# Büyük Veri Setleri ve Vektör Veritabanı (GitHub'a Yüklenmeyecek)
+mevzuat_veriseti_tam.json
+qdrant_db/
+
+# Python Sanal Ortam ve Önbellek Dosyaları
+venv/
+env/
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+
+# İşletim Sistemi Dosyaları
+.DS_Store
+Thumbs.db
