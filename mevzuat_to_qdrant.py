@@ -1,6 +1,6 @@
 """
-Mevzuat Verisi -> Qdrant Vektör Veritabanı (Yerel / Local)
-TEKNOFEST Türkçe Yapay Zeka Dil Ajanları Yarışması - RAG Altyapısı
+Kamu Evrak ve Yazışma Süreçleri İçin Akıllı Agent Destek Sistemi
+Mevzuat Verisi -> Qdrant Vektör Veritabanı Aktarım Modülü (Yerel / Local)
 
 Donanım: RTX 4070 (8GB VRAM) + 32GB RAM
 Model: sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2 (384 boyut)
@@ -18,55 +18,51 @@ from qdrant_client import QdrantClient
 from qdrant_client.models import Distance, VectorParams, PointStruct
 from sentence_transformers import SentenceTransformer
 
-# ═══════════════════════════════════════════════════════════════
-# KONFİGÜRASYON
-# ═══════════════════════════════════════════════════════════════
+# Sistem Konfigürasyonu
 JSON_PATH = "mevzuat_veriseti_tam.json"          # Girdi JSON
 QDRANT_PATH = "./qdrant_db"                      # Yerel Qdrant dizini
 COLLECTION_NAME = "mevzuat_kanunlar"             # Koleksiyon adı
 
-# Model: 8GB VRAM'e rahat sığar (~500MB), Türkçe'de çok iyi çalışır
-# Alternatif (daha güçlü, daha büyük): "BAAI/bge-m3"  -> 1024 boyut
+# Seçilen embedding modeli VRAM optimizasyonu ve Türkçe dil performansı dikkate alınarak belirlenmiştir.
+# Yüksek kapasiteli sistemler için alternatif: "BAAI/bge-m3" (1024 boyut)
 MODEL_NAME = "sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2"
 VECTOR_SIZE = 384                                # MiniLM-L12-v2 çıktı boyutu
 
-BATCH_SIZE = 256                                 # GPU VRAM'e göre ayarlanabilir
-# BATCH_SIZE = 128  # VRAM sorunu olursa bunu dene
+BATCH_SIZE = 256                                 # Donanım kapasitesine göre ayarlanmış yığın boyutu
+# BATCH_SIZE = 128  # Olası VRAM darboğazlarında düşürülebilir
 
-# ───────────────────────────────────────────────────────────────
 # Yardımcı Fonksiyonlar
-# ───────────────────────────────────────────────────────────────
 def deterministic_id(item: dict) -> str:
     """
-    UUID yerine deterministik ID üretir.
-    Aynı (tur, mevzuat_no, madde_no) her zaman aynı ID'yi verir.
-    Güncelleme yaparken çok işe yarar.
+    UUID yerine deterministik benzersiz kimlik (ID) üretir.
+    Aynı (tur, mevzuat_no, madde_no) parametreleri her zaman aynı ID'yi döndürür.
+    Bu yaklaşım, veritabanı güncellemelerinde veri tekrarını (duplikasyon) önler.
     """
     raw = f"{item.get('tur','')}|{item.get('mevzuat_no','')}|{item.get('madde_no','')}"
     return hashlib.md5(raw.encode("utf-8")).hexdigest()
 
 
 def main():
-    # 1) Cihaz tespiti
+    # Donanım (GPU/CPU) tespiti
     device = "cuda" if torch.cuda.is_available() else "cpu"
     print("=" * 60)
     print("  MEVZUAT -> QDRANT EMBEDDING PIPELINE")
     print("=" * 60)
     print(f"[1/6] PyTorch cihazı : {device}")
     if device == "cuda":
-        print(f"       GPU           : {torch.cuda.get_device_name(0)}")
+        print(f"       GPU            : {torch.cuda.get_device_name(0)}")
         print(f"       VRAM          : {torch.cuda.get_device_properties(0).total_memory / 1e9:.1f} GB")
 
-    # 2) Model yükleme (GPU'ya)
+    # Embedding modelinin belleğe yüklenmesi
     print(f"[2/6] Model yükleniyor : {MODEL_NAME}")
     model = SentenceTransformer(MODEL_NAME, device=device)
     print(f"       Model boyutu    : ~{sum(p.numel() for p in model.parameters()) / 1e6:.0f}M parametre")
 
-    # 3) Qdrant yerel başlatma
+    # Qdrant vektör veritabanı bağlantısı
     print(f"[3/6] Qdrant başlatılıyor : {os.path.abspath(QDRANT_PATH)}")
     client = QdrantClient(path=QDRANT_PATH)
 
-    # 4) Koleksiyon oluşturma (varsa silip yeniden)
+    # Koleksiyon yönetimi (Mevcutsa temizle ve yeniden oluştur)
     print(f"[4/6] Koleksiyon oluşturuluyor : '{COLLECTION_NAME}'")
     if client.collection_exists(COLLECTION_NAME):
         print("       Eski koleksiyon siliniyor...")
@@ -82,7 +78,7 @@ def main():
     print(f"       Vektör boyutu   : {VECTOR_SIZE}")
     print(f"       Mesafe metriği  : COSINE")
 
-    # 5) JSON okuma
+    # Kaynak veri setinin (JSON) okunması
     print(f"[5/6] JSON okunuyor : {JSON_PATH}")
     if not os.path.exists(JSON_PATH):
         print(f"❌ HATA: '{JSON_PATH}' dosyası bulunamadı!")
@@ -95,7 +91,7 @@ def main():
     total = len(data)
     print(f"       Toplam kayıt    : {total:,}")
 
-    # 6) Batch halinde embedding + Qdrant upsert
+    # Batch işleme ile embedding üretimi ve vektör veritabanına aktarım
     print(f"[6/6] Embedding üretiliyor & Qdrant'a yazılıyor (batch={BATCH_SIZE})...")
     print("-" * 60)
 
@@ -106,20 +102,20 @@ def main():
         batch = data[i : i + BATCH_SIZE]
         texts = [item["metin"] for item in batch]
 
-        # ── GPU'da embedding üret ──
+        # GPU üzerinde vektör (embedding) dönüşümü
         embeddings = model.encode(
             texts,
             batch_size=BATCH_SIZE,
             convert_to_numpy=True,
-            normalize_embeddings=True,   # Cosine similarity için normalize
+            normalize_embeddings=True,   # Cosine similarity aramaları için normalize edilir
             show_progress_bar=False,
             device=device
         )
 
-        # ── PointStruct hazırla ──
+        # Veritabanı kayıt objelerinin (PointStruct) hazırlanması
         points = []
         for j, item in enumerate(batch):
-            point_id = deterministic_id(item)  # veya str(uuid4())
+            point_id = deterministic_id(item)  
 
             payload = {
                 "tur": item.get("tur", ""),
@@ -136,16 +132,16 @@ def main():
                 )
             )
 
-        # ── Qdrant'a yaz ──
+        # Asenkron yazım (upsert) ile Qdrant'a toplu aktarım
         client.upsert(
             collection_name=COLLECTION_NAME,
             points=points,
-            wait=False   # Asenkron yazım, çok daha hızlı
+            wait=False   
         )
 
         processed += len(batch)
 
-        # İlerleme raporu
+        # İşlem süreci ve performans raporlaması
         if (i // BATCH_SIZE) % 10 == 0 or processed >= total:
             elapsed = time.time() - start_time
             percent = (processed / total) * 100
@@ -155,7 +151,7 @@ def main():
                 f"{speed:>6.1f} kayıt/s  |  {elapsed:>6.1f}s"
             )
 
-    # ── Özet ──
+    # Süreç özeti ve loglama
     total_time = time.time() - start_time
     print("-" * 60)
     print("✅ TÜM İŞLEMLER TAMAMLANDI!")
