@@ -1,6 +1,5 @@
 """
 app.py
-TEKNOFEST Türkçe Yapay Zeka Dil Ajanları Yarışması
 Gradio Web Arayüzü - LangGraph Çok Ajanlı RAG Pipeline + OCR
 
 Desteklenen Dosyalar: PDF, PNG, JPG, JPEG
@@ -24,7 +23,7 @@ try:
 except ImportError:
     FPDF = None
 
-# ── OCR Kütüphaneleri ──
+# OCR Kütüphaneleri
 try:
     import fitz  # PyMuPDF
 except ImportError:
@@ -44,9 +43,7 @@ except ImportError:
     np = None
 
 
-# ═══════════════════════════════════════════════════════════════
 # OCR FONKSİYONLARI
-# ═══════════════════════════════════════════════════════════════
 
 def akilli_resim_filtresi(resim_yolu):
     """Karanlık mod (siyah arka plan) resimleri tespit edip tersine çevirir ve netleştirir."""
@@ -101,8 +98,7 @@ def extract_text_from_image(file_path: str) -> str:
         return "❌ HATA: pytesseract veya Pillow kurulu değil. Kurulum: pip install pytesseract pillow opencv-python numpy"
 
     try:
-        # ESKİ HALİ: img = Image.open(file_path)
-        # YENİ HALİ: Resmi önce akıllı filtreden geçirerek siyah/beyaz ayarını yapıyoruz
+        #Resmi önce akıllı filtreden geçirerek siyah/beyaz ayarını yapıyoruz
         img = akilli_resim_filtresi(file_path)
         
         # Türkçe karakterler için lang='tur' parametresi
@@ -131,8 +127,6 @@ def process_uploaded_file(file_obj) -> str:
     if file_obj is None:
         return ""
 
-    # Gradio'dan gelen dosya objesi farklı formatlarda olabilir
-    # Yeni Gradio sürümlerinde: file_obj.name veya file_obj bir dict olabilir
     if hasattr(file_obj, 'name'):
         file_path = file_obj.name
     elif isinstance(file_obj, str):
@@ -155,9 +149,7 @@ def process_uploaded_file(file_obj) -> str:
         return f"❌ HATA: Desteklenmeyen dosya formatı: {ext}. Lütfen PDF, PNG veya JPG yükleyin."
 
 
-# ═══════════════════════════════════════════════════════════════
 # ÖRNEK EVRAKLAR
-# ═══════════════════════════════════════════════════════════════
 ORNEK_EVRAKLAR = {
     "(Seçiniz)": "",
     "🎓 Yatay Geçiş Başvurusu (Üniversite)": """T.C.
@@ -345,9 +337,7 @@ Bilgilerinize arz ederim.
 Burak Tan""",
 }
 
-# ═══════════════════════════════════════════════════════════════
-# PDF OLUŞTURMA FONKSİYONU
-# ═══════════════════════════════════════════════════════════════
+# PDF OLUŞTURMA FONKSİYONU,
 def create_pdf(metin):
     if FPDF is None:
         return None
@@ -364,7 +354,6 @@ def create_pdf(metin):
         has_font = os.path.exists(font_path)
         
         if has_font:
-            # uni=True kaldırıldı, güncel fpdf2 standartlarına uyarlandı
             pdf.add_font("ArialTR", "", font_path)
             
             # Kalın font (Bold) dosyasını da kütüphaneye tanıtıyoruz
@@ -375,13 +364,12 @@ def create_pdf(metin):
                 # Kalın dosya bulunamazsa normal boyutta büyütülmüş font kullan
                 pdf.set_font("ArialTR", style="", size=14)
                 
-            # Başlık (Antet)
+            # Başlık
             pdf.cell(0, 10, txt="T.C.", ln=True, align="C")
             pdf.cell(0, 10, txt="KAMU EVRAK ANALİZ SİSTEMİ", ln=True, align="C")
             pdf.line(10, 30, 200, 30) # Şık bir alt çizgi
             pdf.cell(0, 15, txt="", ln=True) # Boşluk
             
-            # İçerik metni için normal fonta (style="") geri dönüyoruz
             pdf.set_font("ArialTR", style="", size=11)
         else:
             pdf.set_font("Helvetica", size=11)
@@ -403,9 +391,7 @@ def handle_pdf_export(metin):
         return gr.update(value=dosya_yolu, visible=True)
     return gr.update(visible=False)
 
-# ═══════════════════════════════════════════════════════════════
 # ANALİZ FONKSİYONU
-# ═══════════════════════════════════════════════════════════════
 def analyze_document(evrak_metni: str):
     """LangGraph pipeline'ını çalıştırır, 3 ajan çıktısını döndürür."""
     if not evrak_metni or len(evrak_metni.strip()) < 10:
@@ -445,9 +431,7 @@ def ornek_secim(secim: str):
     return ORNEK_EVRAKLAR.get(secim, "")
 
 
-# ═══════════════════════════════════════════════════════════════
 # GRADIO ARAYÜZÜ
-# ═══════════════════════════════════════════════════════════════
 with gr.Blocks(
     title="TEKNOFEST RAG Agent - Kamu Evrak Analiz Sistemi",
     theme=gr.themes.Soft(
@@ -469,7 +453,7 @@ with gr.Blocks(
     """
 ) as demo:
 
-    # ── Başlık ──
+    # Başlık
     gr.HTML("""
         <div class="title">📋 Kamu Evrak Akıllı Analiz Sistemi</div>
         <div class="subtitle">
@@ -479,11 +463,9 @@ with gr.Blocks(
     """)
 
     with gr.Row():
-        # ═══════════════════════════════════════════════════════
         # SOL PANEL: Giriş (OCR + Metin + Örnekler)
-        # ═══════════════════════════════════════════════════════
         with gr.Column(scale=1, min_width=450):
-            # ── DOSYA YÜKLEME (OCR) ──
+            # DOSYA YÜKLEME (OCR)
             gr.Markdown("### 📎 Evrak Yükle (OCR)")
             file_upload = gr.File(
                 label="PDF, PNG veya JPG dosyası yükleyin",
@@ -502,7 +484,7 @@ with gr.Blocks(
 
             gr.Markdown("<div style='text-align:center; color:#94a3b8; font-size:0.8rem; margin-bottom:0.5rem;'>— VEYA —</div>")
 
-            # ── METİN GİRİŞİ ──
+            # METİN GİRİŞİ
             gr.Markdown("### 📝 Gelen Evrak Metni")
             evrak_input = gr.Textbox(
                 label="",
@@ -513,7 +495,7 @@ with gr.Blocks(
                 elem_classes="output-box"
             )
 
-            # ── ÖRNEK SEÇİMİ ──
+            # ÖRNEK SEÇİMİ
             gr.Markdown("### 📂 Hızlı Örnek Evrak Seçimi")
             ornek_dropdown = gr.Dropdown(
                 choices=list(ORNEK_EVRAKLAR.keys()),
@@ -528,7 +510,7 @@ with gr.Blocks(
                 outputs=evrak_input
             )
 
-            # ── ANALİZ BUTONU ──
+            # ANALİZ BUTONU
             gr.Markdown("<br>")
             analyze_btn = gr.Button(
                 "🔍 Evrakı Analiz Et",
@@ -537,7 +519,7 @@ with gr.Blocks(
                 elem_classes="analyze-btn"
             )
 
-            # ── BİLGİ KUTUSU ──
+            # BİLGİ KUTUSU
             gr.Markdown("""
                 <div style="margin-top:1rem; padding:0.75rem; background: var(--input-background-fill); border: 1px solid var(--border-color-primary); border-radius:8px; font-size:0.85rem; color: var(--body-text-color);">
                     <b>💡 Nasıl çalışır?</b><br>
@@ -548,14 +530,12 @@ with gr.Blocks(
                 </div>
             """)
 
-        # ═══════════════════════════════════════════════════════
         # SAĞ PANEL: Sekmeler (Çıktılar)
-        # ═══════════════════════════════════════════════════════
         with gr.Column(scale=2, min_width=700):
             gr.Markdown("### 📊 Analiz Sonuçları")
 
             with gr.Tabs() as tabs:
-                # ── Sekme 1: Sınıflandırma ──
+                # Sekme 1: Sınıflandırma
                 with gr.TabItem("🏷️ Sınıflandırma (Ajan 1)"):
                     gr.Markdown("*Evrak Analizcisi: Evrak türü, birim yönlendirmesi ve optimize edilmiş arama sorgusu*")
                     out_sinif = gr.Textbox(
@@ -567,7 +547,7 @@ with gr.Blocks(
                         elem_classes="output-box"
                     )
 
-                # ── Sekme 2: Eksik Belge Raporu ──
+                # Sekme 2: Eksik Belge Raporu
                 with gr.TabItem("📋 Eksik Belge Raporu (Ajan 2)"):
                     gr.Markdown("*Mevzuat Uzmanı: Qdrant vektör arama sonuçları ve eksiklik tespiti*")
                     out_eksik = gr.Textbox(
@@ -579,7 +559,7 @@ with gr.Blocks(
                         elem_classes="output-box"
                     )
 
-                # ── Sekme 3: Resmî Yazı Taslakları ──
+                # Sekme 3: Resmî Yazı Taslakları
                 with gr.TabItem("📜 Resmî Yazı Taslakları (Ajan 3)"):
                     gr.Markdown("*Raportör: Üst yazı, bilgilendirme notu ve eksik belge talep yazısı*")
                     out_taslak = gr.Textbox(
@@ -594,7 +574,7 @@ with gr.Blocks(
                     btn_pdf = gr.Button("📥 Bu Resmi Yazıyı PDF Olarak İndir", variant="secondary")
                     out_pdf_file = gr.File(label="📄 PDF Dosyanız Hazır", interactive=False, visible=False)
 
-    # ── Event Bağlantıları ──
+    # Event Bağlantıları
     # Dosya yüklendiğinde OCR çalıştır ve metin kutusuna yaz
     file_upload.change(
         fn=process_uploaded_file,
@@ -616,7 +596,7 @@ with gr.Blocks(
         outputs=out_pdf_file
     )
 
-    # ── Footer ──
+    # Footer
     gr.HTML("""
         <div style="text-align:center; margin-top:1.5rem; padding-top:1rem; border-top:1px solid #e2e8f0; font-size:0.8rem; color:#94a3b8;">
             TEKNOFEST 2026 | Türkçe Yapay Zeka Dil Ajanları Yarışması | 
@@ -625,9 +605,7 @@ with gr.Blocks(
     """)
 
 
-# ═══════════════════════════════════════════════════════════════
 # BAŞLAT
-# ═══════════════════════════════════════════════════════════════
 if __name__ == "__main__":
     demo.launch(
         server_name="0.0.0.0",
